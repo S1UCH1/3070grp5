@@ -107,42 +107,42 @@ class Republisher(Node):
             # R1 speed state increase | L1 speed state decrease
             # R1 = press_list[5] | L1 = press_list[4]
             
-
 #        if self.press_list[5] == 1:
-#            if msg.buttons[12] == 1:
-#                self.rtspd_state = min(self.rtspd_state + 1, len(self.rtspd_option) - 1)
-#            else:
-#                self.speed_state = min(self.speed_state + 1, len(self.speed_option) - 1)
-#        elif self.press_list[4] == 1:
-#            if msg.buttons[12] == 1:
-#                self.rtspd_state = max(self.rtspd_state - 1, 0)
-#            else:
-#                self.speed_state = max(self.speed_state - 1, 0)
-
-
-        if self.press_list[5] == 1:
-           if msg.buttons[7] & self.press_list[5] == 1:
-              if self.rtspd_state < len(self.rtspd_option) - 1:
-                 self.rtspd_state += 1
-              elif self.rtspd_state == len(self.rtspd_option) - 1 :
-                 self.rtspd_state = 0
-        else:
-           if self.speed_state < len(self.speed_option) - 1:
-                 self.speed_state += 1
-           elif self.speed_state == len(self.speed_option) - 1 :
-                 self.speed_state = 0       
+#           if msg.buttons[7] & self.press_list[5] == 1:
+#              if self.rtspd_state < len(self.rtspd_option) - 1:
+#                 self.rtspd_state += 1
+#              elif self.rtspd_state == len(self.rtspd_option) - 1 :
+#                 self.rtspd_state = 0
+#        else:
+#           if self.speed_state < len(self.speed_option) - 1:
+#                 self.speed_state += 1
+#           elif self.speed_state == len(self.speed_option) - 1 :
+#                 self.speed_state = 0       
+#                 
+#        if self.press_list[4] == 1:
+#           if msg.buttons[7] & self.press_list[4] == 1:
+#              if self.rtspd_state > 0:
+#                 self.rtspd_state -= 1
+#              elif self.rtspd_state == 0:
+#                 self.rtspd_state = len(self.rtspd_option) - 1
+#        else:
+#           if self.speed_state > 0:
+#                 self.speed_state -= 1
+#           elif self.speed_state == 0 :
+#                 self.speed_state = len(self.speed_option) - 1
                  
+        if self.press_list[5] == 1:
+            if msg.buttons[7] == 1:
+                self.rtspd_state = min(self.rtspd_state + 1, len(self.rtspd_option) - 1)
+            else:
+                self.speed_state = min(self.speed_state + 1, len(self.speed_option) - 1)
+                
         if self.press_list[4] == 1:
-           if msg.buttons[7] & self.press_list[4] == 1:
-              if self.rtspd_state > 0:
-                 self.rtspd_state -= 1
-              elif self.rtspd_state == 0:
-                 self.rtspd_state = len(self.rtspd_option) - 1
-        else:
-           if self.speed_state > 0:
-                 self.speed_state -= 1
-           elif self.speed_state == 0 :
-                 self.speed_state = len(self.speed_option) - 1
+            if msg.buttons[7] == 1:
+                self.rtspd_state = max(0, self.rtspd_state - 1)
+            else:
+                self.speed_state = max(0, self.speed_state - 1)
+        
             
         self.targetSpeed = np.array([
             msg.axes[0] * self.speed_option[self.speed_state],
