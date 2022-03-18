@@ -1,10 +1,4 @@
 # 3070grp5
 
-siu L chi
-$ git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git
-$ cd Micro-XRCE-DDS-Agent && git checkout v1.1.0
-$ mkdir build && cd build
-$ cmake ..
-$ make
-$ sudo make install
-$ sudo ldconfig /usr/local/lib/
+siu L chi <br>
+MicroXRCEAgent serial --dev /dev/ttyACM1 -b 115200 -v0
