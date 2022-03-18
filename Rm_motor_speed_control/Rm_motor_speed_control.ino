@@ -1,9 +1,9 @@
+[code]
 #include <ros2arduino.h>
 #include <due_can.h>
 
 #define XRCEDDS_PORT  Serial
 #define ID  1
-
 
 // Input
 int rm_target_speed[] = {0,0,0,0};
@@ -45,14 +45,14 @@ void sendRMMotorCurrent(int i1) {
   tx_msg.data.byte[0] = i1 >> 8;
   tx_msg.data.byte[1] = i1;
 
-  Can1.sendFrame(tx_msg);
+  Can0.sendFrame(tx_msg);
 }
 
 void subscribe_wheel_speed1(std_msgs::Float32* msg, void* arg)
 {
   (void)(arg);
-      rm_target_speed[0] = (int)msg->data;
-      rm_target_speed[0] = constrain(rm_target_speed[0], -10000, 10000);
+  rm_target_speed[0] = (int)msg->data;
+  rm_target_speed[0] = constrain(rm_target_speed[0], -10000, 10000);
 }
 
 void subscribe_wheel_speed2(std_msgs::Float32* msg, void* arg)
@@ -98,7 +98,7 @@ void setup()
   while (!XRCEDDS_PORT); 
 
   ros2::init(&XRCEDDS_PORT);
-  Serial.begin(115200);
+//  Serial.begin(115200);
   
   Can0.begin(CAN_BPS_1000K);  //  For communication with RM motors
 
@@ -120,29 +120,28 @@ void loop()
 
   ros2::spin(&wheel_speedNode);
   // Local testing
-  if(Serial.available() > 0) {
-    for (int i = 0; i < 4; i++)
-    {
-    rm_target_speed[i] = Serial.parseInt();
-    rm_target_speed[i] = constrain(rm_target_speed[i], -10000, 10000);
-    }
-     if (Serial.read() == '\n');
-}
-  for (int i = 0; i < 4; i++)
-  {
-    Serial.print(rm_target_speed[i]);
-    Serial.print(" ");
-  }
+//  if(Serial.available() > 0) {
+//    for (int i = 0; i < 4; i++)
+//    {
+//    rm_target_speed[i] = Serial.parseInt();
+//    rm_target_speed[i] = constrain(rm_target_speed[i], -10000, 10000);
+//    }
+//     if (Serial.read() == '\n');
+//}
+//  for (int i = 0; i < 4; i++)
+//  {
+//    Serial.print(rm_target_speed[i]);
+//    Serial.print(" ");
+//  }
+//  Serial.println();
   
-  Serial.println();
   Can0.watchFor();
   Can0.read(rx_msg_2);
   
-  for (int i = 0; i < 4; i++)
-  {
-  rm_speed[i] = rx_msg_2.data.byte[2] << 8 | rx_msg_2.data.byte[3];
-  PIDSpeedCalculate(i);
-  sendRMMotorCurrent(rm_output[i]);
+  for (int i = 0; i < 4; i++){
+    rm_speed[i] = rx_msg_2.data.byte[2] << 8 | rx_msg_2.data.byte[3];
+    PIDSpeedCalculate(i);
+    sendRMMotorCurrent(rm_output[i]);
   }
-  
 }
+[/code]
