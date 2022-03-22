@@ -62,10 +62,12 @@ class Republisher(Node):
         ]
 
         # Speed options
+            # Default initial speed state
         self.speed_state = 2
         self.rtspd_state = 2
+            # Speed options : plane speed in m/s | rotation speed in rad/s
         self.speed_option = [0.1, 0.2, 0.4, 0.6, 0.8]
-        self.rtspd_option = [np.pi/64, np.pi/32, np.pi/16, np.pi/8, np.pi/4]
+        self.rtspd_option = [np.pi/6, np.pi/4, np.pi/2, np.pi, np.pi * 3/2]
 
         # Pressed buttons
             # for press_list:
@@ -76,7 +78,6 @@ class Republisher(Node):
         self.press_list = [0] * len(self.buttonlist)
 
         # RPM Calculation variables
-            # Final RPM data to be published to Arduino
         self.finalRPM = np.zeros(4)
         self.finalRPM1 = self.finalRPM2 = self.finalRPM3 = self.finalRPM4 = Float32()
         self.finalRPMarray = [
@@ -96,62 +97,41 @@ class Republisher(Node):
                 # [1]: Car radius
         self.radii = np.array([0.05, 0.1])
 
-    # when new instance:
+
     def listener_callback(self, msg):
+    
         # To detect new button press instance
         for i in range(len(self.buttonlist)):
             self.press_list[i] = msg.buttons[i] - self.last_state[i]
         self.last_state = msg.buttons
 
-      	# speed state control by R1 and L1
-            # R1 speed state increase | L1 speed state decrease
-            # R1 = press_list[5] | L1 = press_list[4]
-            
-#        if self.press_list[5] == 1:
-#           if msg.buttons[7] & self.press_list[5] == 1:
-#              if self.rtspd_state < len(self.rtspd_option) - 1:
-#                 self.rtspd_state += 1
-#              elif self.rtspd_state == len(self.rtspd_option) - 1 :
-#                 self.rtspd_state = 0
-#        else:
-#           if self.speed_state < len(self.speed_option) - 1:
-#                 self.speed_state += 1
-#           elif self.speed_state == len(self.speed_option) - 1 :
-#                 self.speed_state = 0       
-#                 
-#        if self.press_list[4] == 1:
-#           if msg.buttons[7] & self.press_list[4] == 1:
-#              if self.rtspd_state > 0:
-#                 self.rtspd_state -= 1
-#              elif self.rtspd_state == 0:
-#                 self.rtspd_state = len(self.rtspd_option) - 1
-#        else:
-#           if self.speed_state > 0:
-#                 self.speed_state -= 1
-#           elif self.speed_state == 0 :
-#                 self.speed_state = len(self.speed_option) - 1
-                 
-        if self.press_list[5] == 1:
-            if msg.buttons[7] == 1:
+
+      	# To control Speed states with R1/L1 (R2 hold toggle)
+        if self.press_list[5] == 1:    # R1 = press_list[5]
+            if msg.buttons[7] == 1:    # R2 hold
                 self.rtspd_state = min(self.rtspd_state + 1, len(self.rtspd_option) - 1)
             else:
                 self.speed_state = min(self.speed_state + 1, len(self.speed_option) - 1)
                 
-        if self.press_list[4] == 1:
-            if msg.buttons[7] == 1:
+        if self.press_list[4] == 1:    # L1 = press_list[4]
+            if msg.buttons[7] == 1:    # R2 hold
                 self.rtspd_state = max(0, self.rtspd_state - 1)
             else:
                 self.speed_state = max(0, self.speed_state - 1)
         
             
+        # To calculate the final target speed to be published
+            # Get V_x, V_y, W_z    
         self.targetSpeed = np.array([
             msg.axes[0] * self.speed_option[self.speed_state],
             msg.axes[1] * self.speed_option[self.speed_state],
             msg.axes[2] * self.rtspd_option[self.rtspd_state]
             ])
 
+            # Angle of the car
         self.theta = 0.0
 
+            # Jacobian Matrix
         self.jacob = np.array([
             [  np.sin(self.theta), -np.cos(self.theta), self.radii[1] ],
             [  np.cos(self.theta),  np.sin(self.theta), self.radii[1] ],
@@ -159,35 +139,14 @@ class Republisher(Node):
             [ -np.cos(self.theta), -np.sin(self.theta), self.radii[1] ]
         ])
 
+            # Finalize RPM
         self.finalRPM = (1 / self.radii[0]) * np.matmul(self.jacob, self.targetSpeed)
         self.finalRPM *= 60 / (2 * np.pi)
         
+            # Publish
         for i in range(len(self.finalRPM)):
             self.finalRPMarray[i].data = float(self.finalRPM[i])
             self.publisher[i].publish(self.finalRPMarray[i])
-
-
-        # Targetspeed for ID 1,2,3,4 respectivly
-        # self.targetspeed = [1,1,1,1] * self.speed_option[self.speed_state]
-
-      	# Normalize analog joystick and convert to wheel-pair coefficient
-        # 14 = self.speed_option[self.speed_state] * coffe.imag | 23 = self.speed_option[self.speed_state] * coffe.real
-        # Left Stick X-Axis = msg.axes[0] | Left Stick Y-Axis = msg.axes[1] | Right Stick X-Axis = msg.axes[2]
-				# Move & Rotation
-        # if ((msg.axes[0] != 0) & (msg.axes[1] != 0)) | (msg.axes[2] != 0):
-	    #     self.newAngle = np.angle(msg.axes[0] + msg.axes[1] * j) - pi/4
-  		#   	self.coffe = np.exp(j * self.newAngle)
-    	# 		self.alpha_beta = [self.coffe.imag, self.coffe.real]
-        #   self.rotation =  self.speed_option[self.speed_state] * msg.axes[2] * -1
-        #   self.mix1 = self.speed_option[self.speed_state] * self.coffe.imag + self.rotation
-        #   self.mix2 = self.speed_option[self.speed_state] * self.coffe.real + self.rotation * -1
-        #   self.mix3 = self.speed_option[self.speed_state] * self.coffe.imag + self.rotation
-        #   self.mix4 = self.speed_option[self.speed_state] * self.coffe.real + self.rotation * -1
-        #   self.targetspeed[0] = self.mix1
-        #   self.targetspeed[1] = self.mix2
-        #   self.targetspeed[2] = self.mix3
-        #   self.targetspeed[3] = self.mix4
-        #   self.publisher.publish(self.targetspeed)
 
 
 def main(args=None):
@@ -197,7 +156,6 @@ def main(args=None):
     rclpy.spin(republisher)
 
     # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically when the garbage collector destroys the node object)
     republisher.destroy_node()
     rclpy.shutdown()
 
