@@ -44,10 +44,19 @@ void PIDSpeedCalculate(int id, int *rm_output) {
 }
 
 void sendRMMotorCurrent() {
+  
   for (int i =0; i < 4; i++){
+   rm_output[i]= 1000;
     tx_msg.data.byte[i * 2] = rm_output[i] >> 8;
     tx_msg.data.byte[i * 2 + 1] = rm_output[i];  
     }
+//for (int i = 0; i < 4; i++)
+//{
+//  Serial.print(rm_output[i]);
+//  Serial.print(" ");
+// } Serial.println();
+
+
   Can0.sendFrame(tx_msg);
 }
 
@@ -87,10 +96,9 @@ public:
   : Node("ros2arduino_sub_node")
   {
     this->createSubscriber<std_msgs::Float32>("whlspd1", (ros2::CallbackFunc)subscribe_wheel_speed1, nullptr);
-    this->createSubscriber<std_msgs::Float32>("whlspd2", (ros2::CallbackFunc)subscribe_wheel_speed2, nullptr);
-    this->createSubscriber<std_msgs::Float32>("whlspd3", (ros2::CallbackFunc)subscribe_wheel_speed3, nullptr);
-    this->createSubscriber<std_msgs::Float32>("whlspd4", (ros2::CallbackFunc)subscribe_wheel_speed4, nullptr);
-    
+//    this->createSubscriber<std_msgs::Float32>("whlspd2", (ros2::CallbackFunc)subscribe_wheel_speed2, nullptr);
+//    this->createSubscriber<std_msgs::Float32>("whlspd3", (ros2::CallbackFunc)subscribe_wheel_speed3, nullptr);
+//    this->createSubscriber<std_msgs::Float32>("whlspd4", (ros2::CallbackFunc)subscribe_wheel_speed4, nullptr);   
   }
 };
 
@@ -136,18 +144,12 @@ void loop()
 //    }
 //     if (Serial.read() == '\n');
 //}
-//  for (int i = 0; i < 4; i++)
-//  {
-//    Serial.print(rm_target_speed[i]);
-//    Serial.print(" ");
-//  }
-//  Serial.println();
-  
+
   Can0.watchFor();
   Can0.read(rx_msg_2);
   
   for (int i = 0; i < 4; i++){
-    rm_speed[i - 0x201] = rx_msg_2.data.byte[2] << 8 | rx_msg_2.data.byte[3];
+    rm_speed[i] = rx_msg_2.data.byte[2] << 8 | rx_msg_2.data.byte[3];
     PIDSpeedCalculate(i,rm_output);
     
     sendRMMotorCurrent();
