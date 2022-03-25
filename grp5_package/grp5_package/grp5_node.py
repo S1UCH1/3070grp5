@@ -66,7 +66,7 @@ class Republisher(Node):
         self.speed_state = 2
         self.rtspd_state = 2
             # Speed options : plane speed in m/s | rotation speed in rad/s
-        self.speed_option = [0.1, 0.2, 0.4, 0.6, 0.8]
+        self.speed_option = [0.25, 0.5, 1, 2, 2.7]
         self.rtspd_option = [np.pi/6, np.pi/4, np.pi/2, np.pi, np.pi * 3/2]
 
         # Pressed buttons
@@ -95,11 +95,11 @@ class Republisher(Node):
             # Radii of the car (in meters)
                 # [0]: Wheel radius
                 # [1]: Car radius
-        self.radii = np.array([0.05, 0.1])
+        self.radii = np.array([0.126, 2])
 
 
     def listener_callback(self, msg):
-    
+
         # To detect new button press instance
         for i in range(len(self.buttonlist)):
             self.press_list[i] = msg.buttons[i] - self.last_state[i]
@@ -112,16 +112,16 @@ class Republisher(Node):
                 self.rtspd_state = min(self.rtspd_state + 1, len(self.rtspd_option) - 1)
             else:
                 self.speed_state = min(self.speed_state + 1, len(self.speed_option) - 1)
-                
+
         if self.press_list[4] == 1:    # L1 = press_list[4]
             if msg.buttons[7] == 1:    # R2 hold
                 self.rtspd_state = max(0, self.rtspd_state - 1)
             else:
                 self.speed_state = max(0, self.speed_state - 1)
-        
-            
+
+
         # To calculate the final target speed to be published
-            # Get V_x, V_y, W_z    
+            # Get V_x, V_y, W_z
         self.targetSpeed = np.array([
             msg.axes[0] * self.speed_option[self.speed_state],
             msg.axes[1] * self.speed_option[self.speed_state],
@@ -142,7 +142,7 @@ class Republisher(Node):
             # Finalize RPM
         self.finalRPM = (1 / self.radii[0]) * np.matmul(self.jacob, self.targetSpeed)
         self.finalRPM *= 60 / (2 * np.pi)
-        
+
             # Publish
         for i in range(len(self.finalRPM)):
             self.finalRPMarray[i].data = float(self.finalRPM[i])
