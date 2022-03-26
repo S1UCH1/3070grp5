@@ -66,8 +66,8 @@ class Republisher(Node):
         self.speed_state = 2
         self.rtspd_state = 2
             # Speed options : plane speed in m/s | rotation speed in rad/s
-        self.speed_option = [0.25, 0.5, 1, 2, 2.7]
-        self.rtspd_option = [np.pi/6, np.pi/4, np.pi/2, np.pi, np.pi * 3/2]
+        self.speed_option = [0.5, 0.8, 1.2, 1.7, 2.5]
+        self.rtspd_option = [1, 1.7, 2.4, 3.1, 4]
 
         # Pressed buttons
             # for press_list:
@@ -79,6 +79,7 @@ class Republisher(Node):
 
         # RPM Calculation variables
         self.finalRPM = np.zeros(4)
+        # TODO: Clean this up?
         self.finalRPM1 = self.finalRPM2 = self.finalRPM3 = self.finalRPM4 = Float32()
         self.finalRPMarray = [
             self.finalRPM1,
@@ -95,7 +96,7 @@ class Republisher(Node):
             # Radii of the car (in meters)
                 # [0]: Wheel radius
                 # [1]: Car radius
-        self.radii = np.array([0.126, 2])
+        self.radii = np.array([0.126, 0.75])
 
 
     def listener_callback(self, msg):
@@ -129,6 +130,7 @@ class Republisher(Node):
             ])
 
             # Angle of the car
+                # ! For other potential implementations
         self.theta = 0.0
 
             # Jacobian Matrix
@@ -140,13 +142,16 @@ class Republisher(Node):
         ])
 
             # Finalize RPM
-        self.finalRPM = (1 / self.radii[0]) * np.matmul(self.jacob, self.targetSpeed)
+        self.finalRPM = np.matmul(self.jacob, self.targetSpeed) / self.radii[0]
         self.finalRPM *= 60 / (2 * np.pi)
 
             # Publish
         for i in range(len(self.finalRPM)):
             self.finalRPMarray[i].data = float(self.finalRPM[i])
             self.publisher[i].publish(self.finalRPMarray[i])
+
+            # Debug log
+        self.get_logger().info("Publishing: {}".format(self.finalRPMarray[i].data))
 
 
 def main(args=None):
