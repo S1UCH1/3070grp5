@@ -15,7 +15,7 @@
 import rclpy
 from sensor_msgs.msg import Joy
 from rclpy.node import Node
-from std_msgs.msg import Float32
+from std_msgs.msg import Int16
 import numpy as np
 
 class Republisher(Node):
@@ -30,10 +30,10 @@ class Republisher(Node):
             10)
 
         self.publisher = [
-            self.create_publisher(Float32, 'whlspd1', 10),
-            self.create_publisher(Float32, 'whlspd2', 10),
-            self.create_publisher(Float32, 'whlspd3', 10),
-            self.create_publisher(Float32, 'whlspd4', 10),
+            self.create_publisher(Int16, 'whlspd1', 10),
+            self.create_publisher(Int16, 'whlspd2', 10),
+            self.create_publisher(Int16, 'whlspd3', 10),
+            self.create_publisher(Int16, 'whlspd4', 10),
             ]
 
         self.buttonlist = [
@@ -66,8 +66,8 @@ class Republisher(Node):
         self.speed_state = 2
         self.rtspd_state = 2
             # Speed options : plane speed in m/s | rotation speed in rad/s
-        self.speed_option = [0.5, 0.8, 1.2, 1.7, 2.5]
-        self.rtspd_option = [1, 1.7, 2.4, 3.1, 4]
+        self.speed_option = [1000, 2000, 4000, 6000, 8000]
+        self.rtspd_option = [600, 1000, 2000, 4000, 7000]
 
         # Pressed buttons
             # for press_list:
@@ -80,7 +80,7 @@ class Republisher(Node):
         # RPM Calculation variables
         self.finalRPM = np.zeros(4)
         # TODO: Clean this up?
-        self.finalRPM1 = self.finalRPM2 = self.finalRPM3 = self.finalRPM4 = Float32()
+        self.finalRPM1 = self.finalRPM2 = self.finalRPM3 = self.finalRPM4 = Int16()
         self.finalRPMarray = [
             self.finalRPM1,
             self.finalRPM2,
@@ -94,9 +94,9 @@ class Republisher(Node):
             # Jacobian Matrix
         self.jacob = np.empty([3, 4])
             # Radii of the car (in meters)
-                # [0]: Wheel radius
-                # [1]: Car radius
-        self.radii = np.array([0.126, 0.75])
+                # [0]: Wheel radius (measured 0.126)
+                # [1]: Car radius   (measured 0.75)
+        self.radii = np.array([1, 1])
 
 
     def listener_callback(self, msg):
@@ -135,23 +135,22 @@ class Republisher(Node):
 
             # Jacobian Matrix
         self.jacob = np.array([
-            [  np.sin(self.theta), -np.cos(self.theta), self.radii[1] ],
-            [  np.cos(self.theta),  np.sin(self.theta), self.radii[1] ],
-            [ -np.sin(self.theta),  np.cos(self.theta), self.radii[1] ],
-            [ -np.cos(self.theta), -np.sin(self.theta), self.radii[1] ]
+            [ -1, -1, -self.radii[1] ],
+            [  1, -1, -self.radii[1] ],
+            [  1,  1, -self.radii[1] ],
+            [ -1,  1, -self.radii[1] ]
         ])
 
             # Finalize RPM
         self.finalRPM = np.matmul(self.jacob, self.targetSpeed) / self.radii[0]
-        self.finalRPM *= 60 / (2 * np.pi)
+        self.get_logger().info("")
+        self.get_logger().info("finalRPM")
+        self.get_logger().info("{}".format(self.finalRPM))
 
             # Publish
         for i in range(len(self.finalRPM)):
-            self.finalRPMarray[i].data = float(self.finalRPM[i])
+            self.finalRPMarray[i].data = int(self.finalRPM[i])
             self.publisher[i].publish(self.finalRPMarray[i])
-
-            # Debug log
-        self.get_logger().info("Publishing: {}".format(self.finalRPMarray[i].data))
 
 
 def main(args=None):
@@ -166,3 +165,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
