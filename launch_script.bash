@@ -9,8 +9,7 @@ gnome-terminal -- bash -c '
   ros2 run grp5_package grp5_node;
   '
 
-# v Needs testing on Jetson! v
-# gnome-terminal -- bash -c '
-# chmod 666 /dev/ttyACM*;
-# MicroXRCEAgent serial --dev /dev/ttyACM* -b 115200 -v0
-# '
+gnome-terminal -- bash -c '
+  echo "admin" | sudo -S chmod 666 /dev/ttyACM*;
+  MicroXRCEAgent serial --dev /dev/ttyACM* -b 115200 -v6
+  '
