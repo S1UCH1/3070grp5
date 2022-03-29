@@ -104,14 +104,14 @@ void setup()
   ros2::init(&XRCEDDS_PORT);
   
   for(int i = 0; i < 4; i++) {
-    rm_sk_pid[i][0] = 2.0;
+    rm_sk_pid[i][0] = 1.25;
     rm_sk_pid[i][1] = 0.0;
     rm_sk_pid[i][2] = 2.75;
   }
   
    rm_sk_pid[1][0] = 1.0;
    rm_sk_pid[1][1] = 0.01;
-   rm_sk_pid[1][2] = 1.5;
+   rm_sk_pid[1][2] = 2.75;
   
   Can0.begin(CAN_BPS_1000K);  //  For communication with RM motors
   
