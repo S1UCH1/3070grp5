@@ -78,14 +78,7 @@ class Republisher(Node):
 
         # RPM Calculation variables
         self.finalRPM = np.zeros(4)
-        # TODO: Clean this up?
-        self.finalRPM1 = self.finalRPM2 = self.finalRPM3 = self.finalRPM4 = Int16()
-        self.finalRPMarray = [
-            self.finalRPM1,
-            self.finalRPM2,
-            self.finalRPM3,
-            self.finalRPM4
-        ]
+        self.finalRPMarray = [Int16()] * 4
             # Angle of the car where CCW +ve
         self.theta = float()
             # Target V_x, V_y, W_z
@@ -95,6 +88,7 @@ class Republisher(Node):
             # Radii of the car (in meters)
                 # [0]: Wheel radius (measured 0.126)
                 # [1]: Car radius   (measured 0.75)
+            # ! Use this when using SI unit final speed
         self.radii = np.array([1, 1])
 
 
@@ -128,11 +122,11 @@ class Republisher(Node):
             msg.axes[2] * self.rtspd_option[self.rtspd_state]
             ])
 
-            # Angle of the car
-                # ! For other potential implementations
+        # Angle of the car
+            # ! For other potential implementations
         self.theta = 0.0
 
-            # Jacobian Matrix
+        # Jacobian Matrix
         self.jacob = np.array([
             [ -1, -1, -self.radii[1] ],
             [  1, -1, -self.radii[1] ],
@@ -140,13 +134,13 @@ class Republisher(Node):
             [ -1,  1, -self.radii[1] ]
         ])
 
-            # Finalize RPM
+        # Finalize RPM
         self.finalRPM = np.matmul(self.jacob, self.targetSpeed) / self.radii[0]
         self.get_logger().info("")
         self.get_logger().info("finalRPM")
         self.get_logger().info("{}".format(self.finalRPM))
 
-            # Publish
+        # Publish
         for i in range(len(self.finalRPM)):
             self.finalRPMarray[i].data = int(self.finalRPM[i])
             self.publisher[i].publish(self.finalRPMarray[i])
