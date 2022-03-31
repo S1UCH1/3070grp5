@@ -12,7 +12,7 @@ double pid_speed[4][3]={0};
 // Info
 const int MAX_OUTPUT = 16384;
 
-// PID - Speed
+// PID
 int rm_speed[4];
 int rm_speed_error[4], rm_last_speed_error[4];
 double rm_sk_pid[4][3] = {0};
@@ -21,6 +21,7 @@ double rm_so_pid[4][3] = {0};
 CAN_FRAME tx_msg, rx_msg;
 int rm_output[4] = {0,0,0,0};
 
+// Calculates PID and puts it in rm_output, ready to be sent
 void PIDSpeedCalculate() {
   for (int id = 0; id < 4; id++)
   {
@@ -40,16 +41,18 @@ void PIDSpeedCalculate() {
   }
 }
 
+// Sends the calculated current to CAN bus
 void sendRMMotorCurrent() {
-  
+
   for (int i =0; i < 4; i++){
     tx_msg.data.byte[i * 2] = rm_output[i] >> 8;
-    tx_msg.data.byte[i * 2 + 1] = rm_output[i];  
+    tx_msg.data.byte[i * 2 + 1] = rm_output[i];
     }
 
   Can0.sendFrame(tx_msg);
 }
 
+// Subscribers for whlspd(1-4)
 void subscribe_wheel_speed1(std_msgs::Int16* msg, void* arg)
 {
   (void)(arg);
@@ -85,7 +88,7 @@ class Wheel_speedSub : public ros2::Node {
       sub1 = this->createSubscriber<std_msgs::Int16>("whlspd1", (ros2::CallbackFunc)subscribe_wheel_speed1, NULL);
       sub2 = this->createSubscriber<std_msgs::Int16>("whlspd2", (ros2::CallbackFunc)subscribe_wheel_speed2, NULL);
       sub3 = this->createSubscriber<std_msgs::Int16>("whlspd3", (ros2::CallbackFunc)subscribe_wheel_speed3, NULL);
-      sub4 = this->createSubscriber<std_msgs::Int16>("whlspd4", (ros2::CallbackFunc)subscribe_wheel_speed4, NULL);      
+      sub4 = this->createSubscriber<std_msgs::Int16>("whlspd4", (ros2::CallbackFunc)subscribe_wheel_speed4, NULL);
     }
 
   private:
@@ -96,40 +99,44 @@ class Wheel_speedSub : public ros2::Node {
 };
 
 
-void setup() 
+// v Main program begins here v //////////////////////////////////////////////////////////////////////////////////////////////
+
+
+void setup()
 {
   XRCEDDS_PORT.begin(115200);
-  while (!XRCEDDS_PORT); 
+  while (!XRCEDDS_PORT);
 
   ros2::init(&XRCEDDS_PORT);
-  
+
+  // Initialize default global PID params
   for(int i = 0; i < 4; i++) {
     rm_sk_pid[i][0] = 1.25;
     rm_sk_pid[i][1] = 0.0;
     rm_sk_pid[i][2] = 2.75;
   }
-  
-   rm_sk_pid[1][0] = 1.0;
-   rm_sk_pid[1][1] = 0.01;
-   rm_sk_pid[1][2] = 2.75;
-  
+
+  // Add special-case PID params here
+  rm_sk_pid[1][0] = 1.0;
+  rm_sk_pid[1][2] = 2.75;
+
   Can0.begin(CAN_BPS_1000K);  //  For communication with RM motors
-  
+
   tx_msg.id = 0x200;
   tx_msg.length = 8;
-  
+
 }
 
-void loop() 
+void loop()
 {
   static Wheel_speedSub wheel_speedNode;
 
-  ros2::spin(&wheel_speedNode); 
+  ros2::spin(&wheel_speedNode);
 
   Can0.watchFor();
   Can0.read(rx_msg);
   rm_speed[rx_msg.id - 0x201] = rx_msg.data.byte[2] << 8 | rx_msg.data.byte[3];
+
   PIDSpeedCalculate();
-    
   sendRMMotorCurrent();
 }
