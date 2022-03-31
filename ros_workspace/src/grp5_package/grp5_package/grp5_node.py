@@ -63,11 +63,10 @@ class Republisher(Node):
 
         # Speed options
             # Default initial speed state
-        self.speed_state = 2
-        self.rtspd_state = 2
+        self.speed_state = self.rtspd_state = 0
             # Speed options : plane speed in m/s | rotation speed in rad/s
-        self.speed_option = [1000, 2000, 4000, 6000, 8000]
-        self.rtspd_option = [600, 1000, 2000, 4000, 7000]
+        self.speed_option = [1500, 2500, 3300, 4200, 6000]
+        self.rtspd_option = [800, 1400, 2000, 4000, 6000]
 
         # Pressed buttons
             # for press_list:
@@ -165,4 +164,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
