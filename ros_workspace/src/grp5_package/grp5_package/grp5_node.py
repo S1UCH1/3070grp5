@@ -64,7 +64,11 @@ class Republisher(Node):
         # Speed options
             # Default initial speed state
         self.speed_state = self.rtspd_state = 0
-            # Speed options : plane speed in m/s | rotation speed in rad/s
+            # Options: Output current of 0-20A normalized to values 0 - 16384
+            # Recommended range: 700-8000
+        # Default values:
+            # self.speed_option = [1500, 2500, 3300, 4200, 6000]
+            # self.rtspd_option = [800, 1400, 2000, 4000, 6000]
         self.speed_option = [1500, 2500, 3300, 4200, 6000]
         self.rtspd_option = [800, 1400, 2000, 4000, 6000]
 
@@ -77,8 +81,8 @@ class Republisher(Node):
         self.press_list = [0] * len(self.buttonlist)
 
         # RPM Calculation variables
-        self.finalRPM = np.zeros(4)
-        self.finalRPMarray = [Int16()] * 4
+        self.wheelOut = np.zeros(4)
+        self.wheelOutArray = [Int16()] * 4
             # Angle of the car where CCW +ve
         self.theta = float()
             # Target V_x, V_y, W_z
@@ -135,15 +139,15 @@ class Republisher(Node):
         ])
 
         # Finalize RPM
-        self.finalRPM = np.matmul(self.jacob, self.targetSpeed) / self.radii[0]
+        self.wheelOut = np.matmul(self.jacob, self.targetSpeed) / self.radii[0]
         self.get_logger().info("")
         self.get_logger().info("finalRPM")
-        self.get_logger().info("{}".format(self.finalRPM))
+        self.get_logger().info("{}".format(self.wheelOut))
 
         # Publish
-        for i in range(len(self.finalRPM)):
-            self.finalRPMarray[i].data = int(self.finalRPM[i])
-            self.publisher[i].publish(self.finalRPMarray[i])
+        for i in range(len(self.wheelOut)):
+            self.wheelOutArray[i].data = int(self.wheelOut[i])
+            self.publisher[i].publish(self.wheelOutArray[i])
 
 
 def main(args=None):
